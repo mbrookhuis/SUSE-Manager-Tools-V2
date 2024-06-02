@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	_sumamodels "ecp-golang-cm/pkg/models/susemanager"
-
+	_sumamodels "SUSE-Manager-Tools-V2/internal/models/susemanager"
 	"go.uber.org/zap"
 )
 

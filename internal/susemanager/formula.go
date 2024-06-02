@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	returnCodes "ecp-golang-cm/pkg/util/returnCodes"
+	returnCodes "SUSE-Manager-Tools-V2/internal/util/returnCodes"
 	"github.com/pkg/errors"
 
 	"go.uber.org/zap"

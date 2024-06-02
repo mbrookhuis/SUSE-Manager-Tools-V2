@@ -24,7 +24,6 @@ type Config struct {
 	MaxAge             int    `envconfig:"LOG_FILE_MAX_AGE"`
 	CompressionEnabled bool   `envconfig:"LOG_COMPRESSION_ENABLED"`
 	StacktraceEnabled  bool   `envconfig:"LOG_STACKTRACE_ENABLED"`
-	ServiceName        string `envconfig:"SERVICE_NAME"`
 	EnableFileLogs     bool   `envconfig:"LOG_ENABLE_FILE"`
 }
 
@@ -126,9 +125,6 @@ func New(config *Config, zapConfig *zap.Config) (*zap.Logger, func(), error) {
 		return nil, nil, err
 	}
 
-	logger = logger.With(
-		zap.String("service_name", config.ServiceName),
-	)
 	stop := func() {
 		defer func() {
 			if err := recover(); err != nil {

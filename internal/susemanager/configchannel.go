@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	sumamodels "ecp-golang-cm/pkg/models/susemanager"
+	sumamodels "SUSE-Manager-Tools-V2/internal/models/susemanager"
 
 	"go.uber.org/zap"
 )

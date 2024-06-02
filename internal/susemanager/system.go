@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	sumamodels "ecp-golang-cm/pkg/models/susemanager"
-	returnCodes "ecp-golang-cm/pkg/util/returnCodes"
+	sumamodels "SUSE-Manager-Tools-V2/internal/models/susemanager"
+	returnCodes "SUSE-Manager-Tools-V2/internal/util/returnCodes"
 
 	"go.uber.org/zap"
 )
@@ -381,6 +381,41 @@ func (p *Proxy) ListLatestInstallablePackages(requestID string, auth AuthParams,
 // return: []sumamodels.ActiveSystem, error
 func (p *Proxy) SystemListActiveSystems(requestID string, auth AuthParams) ([]sumamodels.ActiveSystem, error) {
 	path := "system/listActiveSystems"
+	response, err := p.suse.SuseManagerCall(nil, http.MethodGet, auth.Host, path, auth.SessionKey)
+	if err != nil {
+		return nil, fmt.Errorf("error while getting list of active systems. Error: %s", err.Error())
+	}
+	var systems []sumamodels.ActiveSystem
+	if response.StatusCode == 200 {
+		resp, err := HandleSuseManagerResponse(response.Body)
+		if err != nil {
+			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrHandlingSuseManagerResponse, err), zap.Any("requestID", requestID))
+			return nil, fmt.Errorf(returnCodes.ErrHandlingSuseManagerResponse)
+		}
+		byteArray, err := json.Marshal(resp)
+		if err != nil {
+			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrFailedMarshalling, err), zap.Any("requestID", requestID))
+			return nil, fmt.Errorf(returnCodes.ErrFailedMarshalling)
+		}
+		err = json.Unmarshal(byteArray, &systems)
+		if err != nil {
+			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrFailedUnMarshalling, err), zap.Any("requestID", requestID))
+			return nil, fmt.Errorf(returnCodes.ErrFailedUnMarshalling)
+		}
+	} else {
+		p.logger.Error(fmt.Sprintf("calling active systems api Failed. Http StatusCode: %s Http Response body: %s", fmt.Sprint(response.StatusCode), fmt.Sprint(string(response.Body))), zap.Any("requestID", requestID))
+		return nil, fmt.Errorf(returnCodes.ErrProcessingData)
+	}
+	return systems, nil
+}
+
+// SystemListInActiveSystems
+//
+// param: requestID
+// param: auth
+// return:
+func (p *Proxy) SystemListInActiveSystems(requestID string, auth AuthParams) ([]sumamodels.ActiveSystem, error) {
+	path := "system/listInactiveSystems"
 	response, err := p.suse.SuseManagerCall(nil, http.MethodGet, auth.Host, path, auth.SessionKey)
 	if err != nil {
 		return nil, fmt.Errorf("error while getting list of active systems. Error: %s", err.Error())

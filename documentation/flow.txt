@@ -1,0 +1,19 @@
+systemUpdate --> start program
+ - configfile present, if yes read file
+ - login to SUSE-Manager
+ - check if the given system exists
+ - call updateServer
+
+updateServer
+- check if server is listed in exceptions
+- check if server is active
+x execute updatescript begin if given
+x apply highstate when option applyConfig (-c) has been set and no highstate has been performed in previous step
+X check if there is a support pack migration available.
+    x when yes perform doSpMigrate
+    x when no perform doUpgrade
+x execute updatescript end if given
+x apply highstate when option applyConfig (-c) has been set and no highstate has been performed in previous step
+x execute postscript when given
+
+

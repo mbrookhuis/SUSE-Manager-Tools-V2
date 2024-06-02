@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	sumamodels "ecp-golang-cm/pkg/models/susemanager"
-	util "ecp-golang-cm/pkg/util/contains"
-	"ecp-golang-cm/pkg/util/rest"
-	returnCodes "ecp-golang-cm/pkg/util/returnCodes"
+	sumamodels "SUSE-Manager-Tools-V2/internal/models/susemanager"
+	util "SUSE-Manager-Tools-V2/internal/util/contains"
+	"SUSE-Manager-Tools-V2/internal/util/rest"
+	returnCodes "SUSE-Manager-Tools-V2/internal/util/returnCodes"
 
 	"github.com/pkg/errors"
 

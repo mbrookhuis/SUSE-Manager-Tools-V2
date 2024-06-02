@@ -1,0 +1,9 @@
+Usage of C:\work\git\SUSE-Manager-Tools-V2\build\systemUpdate.exe:
+  -c            Apply configuration after and before patching. Default: no config update
+  -d            Do not run a dry run before performing a SP migration. Default: perform dryrun
+  -f            Force a reboot server after patching or supportpack upgrade. Default: reboot when needed
+  -i string     Configuration file containing the needed configuration. Default: configsm.yaml in the directory where updateServer has been started. (default "C:\\work\\git\\SUSE-Manager-Tools-V2\\configsm.yaml")
+  -n            Do not reboot server after patching or supportpack upgrade. Default: reboot when needed
+  -p string     Execute given script on the SUSE Manger Server when system_update has finished (default "no_script_given")
+  -s string     name of the server to receive config update. Required (default "not_set")
+  -u            Execute the server specific _start and _end scripts. Default: no scripts are being executed

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	sumamodels "ecp-golang-cm/pkg/models/susemanager"
-	returnCodes "ecp-golang-cm/pkg/util/returnCodes"
+	sumamodels "SUSE-Manager-Tools-V2/internal/models/susemanager"
+	returnCodes "SUSE-Manager-Tools-V2/internal/util/returnCodes"
 	"github.com/pkg/errors"
 
 	"go.uber.org/zap"

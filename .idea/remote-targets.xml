@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <targets>
+      <target name="WSL - openSUSE-Leap-15.4" type="wsl" uuid="23b45b18-8f49-4b08-8229-55091411c793">
+        <config>
+          <option name="distributionMsId" value="openSUSE-Leap-15.4" />
+          <option name="projectRootOnTarget" value="{exitCode=0, timeout=false, cancelled=false, stdout=/mnt/c/Users/MichaelBrookhuis/AppData/Local/JetBrains/Toolbox/apps/Goland/ch-0/233.14808.20/jbr/bin&#10;, stderr=}/SUSE-Manager-Tools-V2" />
+        </config>
+        <ContributedStateBase type="GoLanguageRuntime">
+          <config>
+            <option name="goPath" value="/home/mbrookhuis/go" />
+            <option name="goRoot" value="/usr/bin/go" />
+            <option name="goVersion" value="go1.21.3 linux/amd64" />
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>

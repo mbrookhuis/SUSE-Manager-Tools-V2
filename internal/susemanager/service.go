@@ -2,8 +2,8 @@
 package susemanager
 
 import (
-	sumamodels "ecp-golang-cm/pkg/models/susemanager"
-	"ecp-golang-cm/pkg/util/rest"
+	sumamodels "SUSE-Manager-Tools-V2/internal/models/susemanager"
+	"SUSE-Manager-Tools-V2/internal/util/rest"
 
 	"go.uber.org/zap"
 )
@@ -102,6 +102,7 @@ type IProxy interface {
 	ScheduleScriptRun(requestID string, auth AuthParams, systemID int, timeout int, script string) error
 	SystemGetScriptResult(requestID string, auth AuthParams, actionID int, resultCompleted int) (string, error)
 	SystemListActiveSystems(requestID string, auth AuthParams) ([]sumamodels.ActiveSystem, error)
+	SystemListInActiveSystems(requestID string, auth AuthParams) ([]sumamodels.ActiveSystem, error)
 	SystemListInstalledPackages(requestID string, auth AuthParams, systemID int) ([]sumamodels.InstalledPackage, error)
 	SystemScheduleApplyHighstate(requestID string, auth AuthParams, systemID int, timeout int) error
 	SystemScheduleApplyStates(requestID string, auth AuthParams, systemID int, stateNames []string, timeout int) error

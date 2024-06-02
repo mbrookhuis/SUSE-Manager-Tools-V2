@@ -4,7 +4,7 @@ package susemanager
 import (
 	"fmt"
 
-	"ecp-golang-cm/pkg/util/rest"
+	"SUSE-Manager-Tools-V2/internal/util/rest"
 
 	"go.uber.org/zap"
 )
