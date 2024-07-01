@@ -1,0 +1,12 @@
+{"log_level":"INFO","log_time_stamp":"2024-06-29T22:17:00.335+0200","function_name":"systemUpdate/root.go:43","log_message":"system-update initiated"}
+{"log_level":"ERROR","log_time_stamp":"2024-06-29T22:17:00.339+0200","function_name":"systemUpdate/validateParams.go:24","log_message":"Server to be updated is not given","given server":"not_set"}
+{"log_level":"INFO","log_time_stamp":"2024-06-29T22:33:12.527+0200","function_name":"systemUpdate/root.go:43","log_message":"system-update initiated"}
+{"log_level":"ERROR","log_time_stamp":"2024-06-29T22:33:12.532+0200","function_name":"systemUpdate/validateParams.go:24","log_message":"Server to be updated is not given","given server":"not_set"}
+{"log_level":"INFO","log_time_stamp":"2024-06-29T22:44:23.361+0200","function_name":"systemUpdate/root.go:43","log_message":"system-update initiated"}
+{"log_level":"ERROR","log_time_stamp":"2024-06-29T22:44:23.364+0200","function_name":"systemUpdate/validateParams.go:24","log_message":"Server to be updated is not given","given server":"not_set"}
+{"log_level":"INFO","log_time_stamp":"2024-06-29T22:46:31.151+0200","function_name":"systemUpdate/root.go:43","log_message":"system-update initiated"}
+{"log_level":"ERROR","log_time_stamp":"2024-06-29T22:46:31.154+0200","function_name":"systemUpdate/validateParams.go:24","log_message":"Server to be updated is not given","given server":"not_set"}
+{"log_level":"INFO","log_time_stamp":"2024-06-29T22:51:07.258+0200","function_name":"systemUpdate/root.go:43","log_message":"system-update initiated"}
+{"log_level":"ERROR","log_time_stamp":"2024-06-29T22:51:07.263+0200","function_name":"systemUpdate/validateParams.go:24","log_message":"Server to be updated is not given","given server":"not_set"}
+{"log_level":"INFO","log_time_stamp":"2024-06-29T23:20:06.034+0200","function_name":"systemUpdate/root.go:43","log_message":"system-update initiated"}
+{"log_level":"ERROR","log_time_stamp":"2024-06-29T23:20:06.041+0200","function_name":"systemUpdate/validateParams.go:24","log_message":"Server to be updated is not given","given server":"not_set"}

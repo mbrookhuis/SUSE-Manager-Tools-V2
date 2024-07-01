@@ -13,6 +13,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// updateServer
+//
+// param: systemId
+// param: auth
+// param: zf
 func (h *SystemUpdate) updateServer(systemId int, auth *_sumanUseCase.AuthParams, zf ...zapCore.Field) error {
 	h.logger.Debug("Function updateServer started", zf...)
 	// check if server is on the excluded list
@@ -37,8 +42,18 @@ func (h *SystemUpdate) updateServer(systemId int, auth *_sumanUseCase.AuthParams
 			return err
 		}
 	}
+	doSPM, newBaseChannel := h.checkForSpMigration(systemId, auth, zf...)
+	h.logger.Debug(fmt.Sprintf("MBMBMB: do spm %b, new basechannel: %s", doSPM, newBaseChannel))
+
 	//
-	//
+	//     (do_spm, new_basechannel) = check_for_sp_migration()
+	//     if do_spm:
+	//        smt.log_info("Server {} will get a SupportPack Migration to {} ".format(args.server, new_basechannel))
+	//        do_spmigrate(new_basechannel, args.noreboot, args.nodryrun)
+	//    else:
+	//        smt.log_info("Server {} will be upgraded with latest available patches".format(args.server))
+	//        do_upgrade(args.noreboot, args.forcereboot)
+	//    highstate_done = False
 	//
 	if h.params.UpdateScript {
 		err = h.doUpdateActions("end", "general", systemId, auth, zf...)
@@ -56,6 +71,10 @@ func (h *SystemUpdate) updateServer(systemId int, auth *_sumanUseCase.AuthParams
 	return nil
 }
 
+// isSystemInactive
+//
+// param: auth
+// param: zf
 func (h *SystemUpdate) isSystemInactive(auth *_sumanUseCase.AuthParams, zf ...zapCore.Field) error {
 	h.logger.Debug("Function isSystemInactive started", zf...)
 	inActiveSystems, err := h.sumanProxy.SystemListInActiveSystems(h.requestID, *auth)
@@ -74,8 +93,15 @@ func (h *SystemUpdate) isSystemInactive(auth *_sumanUseCase.AuthParams, zf ...za
 	return nil
 }
 
+// doUpdateActions
+//
+// param: phase
+// param: eventFile
+// param: systemId
+// param: auth
+// param: zf
 func (h *SystemUpdate) doUpdateActions(phase string, eventFile string, systemId int, auth *_sumanUseCase.AuthParams, zf ...zapCore.Field) error {
-	h.logger.Debug("Function performUpdateScript started", zf...)
+	h.logger.Debug("Function doUpdateActions started", zf...)
 	// first do general, then server based
 	// first check if there is a entry for script
 	// then execute state.
@@ -97,6 +123,9 @@ func (h *SystemUpdate) doUpdateActions(phase string, eventFile string, systemId 
 	case "begin":
 		scriptToRun = scriptData.BeginScript.Commands
 		if len(scriptData.BeginScript.State) > 0 {
+			for _, state := range scriptData.BeginScript.State {
+				stateToRun = append(stateToRun, state)
+			}
 			err = h.executeStates(stateToRun, systemId, auth, zf...)
 			if err != nil {
 				return err
@@ -107,6 +136,9 @@ func (h *SystemUpdate) doUpdateActions(phase string, eventFile string, systemId 
 	case "end":
 		scriptToRun = scriptData.EndScript.Commands
 		if len(scriptData.EndScript.State) > 0 {
+			for _, state := range scriptData.EndScript.State {
+				stateToRun = append(stateToRun, state)
+			}
 			err = h.executeStates(stateToRun, systemId, auth, zf...)
 			if err != nil {
 				return err
@@ -115,16 +147,20 @@ func (h *SystemUpdate) doUpdateActions(phase string, eventFile string, systemId 
 			h.logger.Info(fmt.Sprintf("There are no states to be executed for phase %s", phase), zf...)
 		}
 	}
-
-	fmt.Println(scriptToRun)
-
 	if len(scriptToRun) > 0 {
-		fmt.Println("er zijn scripts")
+		var commands string
+		for _, command := range scriptToRun {
+			commands = commands + "\n" + command
+		}
+		err := h.sumanProxy.ScheduleScriptRun(h.requestID, *auth, systemId, 240, commands)
+		if err != nil {
+			return err
+		}
+
 	} else {
 		h.logger.Info(fmt.Sprintf("There are no scripts to be executed for phase %s", phase), zf...)
 	}
-
-	h.logger.Debug("Function performUpdateScript finished", zf...)
+	h.logger.Debug("Function doUpdateActions finished", zf...)
 	return nil
 }
 
@@ -142,7 +178,7 @@ func (h SystemUpdate) executeStates(states []string, systemId int, auth *_sumanU
 		h.logger.Error("Highstate failed", zf...)
 		return err
 	}
-	h.logger.Debug("Function executeStates started", zf...)
+	h.logger.Debug("Function executeStates finished", zf...)
 	return nil
 }
 
@@ -162,6 +198,70 @@ func (h SystemUpdate) executeScripts(scripts []string, systemId int, auth *_suma
 			return err
 		}
 	}
-	h.logger.Debug("Function executeScripts started", zf...)
+	h.logger.Debug("Function executeScripts finished", zf...)
 	return nil
 }
+
+func (h SystemUpdate) checkForSpMigration(systemId int, auth *_sumanUseCase.AuthParams, zf ...zapCore.Field) (bool, string) {
+	h.logger.Debug("Function echeckForSpMigration started", zf...)
+	serverInfo, err := h.sumanProxy.SystemGetSubscribedBaseChannel(h.requestID, *auth, systemId)
+	if err != nil {
+		return false, ""
+	}
+	if !contains.PartOff(serverInfo.Label, "sle") || !contains.PartOff(serverInfo.Label, "opensuse") {
+		h.logger.Warn("System is not running SLE or openSuse. SP Migration not possible", zf...)
+		return false, ""
+	}
+	h.logger.Debug(fmt.Sprintf("MBMBMB: assgined channel: %s", serverInfo.Label))
+
+	h.logger.Debug("Function echeckForSpMigration finished", zf...)
+	return false, ""
+}
+
+/*
+def check_for_sp_migration():
+    """
+    Check if a sp migration is released for this server
+    """
+    current_version = None
+    current_bc = smt.system_getsubscribedbasechannel().get('label')
+    if "sle" not in current_bc or "opensuse" not in current_bc:
+        smt.log_info("System is not running SLE. SP Migration not possible")
+        return False, ""
+    if "sp" not in current_bc:
+        current_sp = "sp0"
+    else:
+        current_sp = "sp" + str(current_bc.split("sp")[1].split("-")[0])
+    all_bc = smt.get_labels_all_basechannels()
+    if smtools.CONFIGSM['maintenance']['sp_migration_project']:
+        for project, new_pr in smtools.CONFIGSM['maintenance']['sp_migration_project'].items():
+            if server_is_exception(new_pr):
+                return False, ""
+            project_environments = smt.contentmanagement_listprojectenvironment(project, True)
+            if project_environments:
+                for env in smt.contentmanagement_listprojectenvironment(project, True):
+                    calc_current_bc = project + "-" + env['label']
+                    if calc_current_bc in current_bc:
+                        part_new_bc = calc_current_bc.replace(project, new_pr)
+                        new_base_channel = None
+                        for bc in all_bc:
+                            if part_new_bc in bc:
+                                new_base_channel = bc
+                                remove_ltss()
+                                return True, new_base_channel
+                        if not new_base_channel:
+                            smt.log_info("Given SP Migration path is not available. There are no channels available.")
+                            return False, ""
+    if smtools.CONFIGSM['maintenance']['sp_migration']:
+        #if "11-" in current_bc:
+        #    current_version = "sles11-"
+        #elif "12-" in current_bc:
+        #    current_version = "sles12-"
+        #elif "15-" in current_bc:
+        #    current_version = "sles15-"
+        #current_version += current_sp
+        for key, value in smtools.CONFIGSM['maintenance']['sp_migration'].items():
+            if key == current_bc and not server_is_exception(value):
+                return True, value
+    return False, ""
+*/
