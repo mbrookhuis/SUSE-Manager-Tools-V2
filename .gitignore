@@ -29,3 +29,5 @@ coverage.out
 coverage.xml
 report.xml
 
+#build dir
+build/
