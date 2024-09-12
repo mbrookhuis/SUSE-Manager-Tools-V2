@@ -78,13 +78,12 @@ func (p *Proxy) GetGroupFormulaData(auth AuthParams, groupID int, formulaName st
 
 // SetSystemFormulaData - save formula data to system
 //
-// param: requestID
 // param: auth
 // param: systemID
 // param: formulaName
 // param: formulaData
 // return:
-func (p *Proxy) SetSystemFormulaData(requestID string, auth AuthParams, systemID int, formulaName string, formulaData interface{}) (int, error) {
+func (p *Proxy) SetSystemFormulaData(auth AuthParams, systemID int, formulaName string, formulaData interface{}) (int, error) {
 	body, err := json.Marshal(map[string]any{"systemId": systemID, "formulaName": formulaName, "content": formulaData})
 	if err != nil {
 		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
@@ -93,20 +92,20 @@ func (p *Proxy) SetSystemFormulaData(requestID string, auth AuthParams, systemID
 	path := "formula/setSystemFormulaData"
 	response, err := p.suse.SuseManagerCall(body, http.MethodPost, auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("Error message recieved from suse-manger", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error("Error message recieved from suse-manger", zap.Any("error", err.Error()))
 		return 0, err
 	}
 	var result int
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("response", resp), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err.Error()))
 			return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err.Error()))
 			return 0, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
@@ -118,13 +117,12 @@ func (p *Proxy) SetSystemFormulaData(requestID string, auth AuthParams, systemID
 
 // SetGroupFormulaData - set formula data for group
 //
-// param: requestID
 // param: auth
 // param: groupID
 // param: formulaName
 // param: formulaData
 // return:
-func (p *Proxy) SetGroupFormulaData(requestID string, auth AuthParams, groupID int, formulaName string, formulaData interface{}) (int, error) {
+func (p *Proxy) SetGroupFormulaData(auth AuthParams, groupID int, formulaName string, formulaData interface{}) (int, error) {
 	body, err := json.Marshal(map[string]interface{}{"groupId": groupID, "formulaName": formulaName, "content": formulaData})
 	if err != nil {
 		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
@@ -139,13 +137,13 @@ func (p *Proxy) SetGroupFormulaData(requestID string, auth AuthParams, groupID i
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("response", resp), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err.Error()))
 			return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err.Error()))
 			return 0, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
@@ -157,11 +155,10 @@ func (p *Proxy) SetGroupFormulaData(requestID string, auth AuthParams, groupID i
 
 // GetFormulasByServerID -  get list of formulas for system
 //
-// param: requestID
 // param: auth
 // param: systemID
 // return:
-func (p *Proxy) GetFormulasByServerID(requestID string, auth AuthParams, systemID int) ([]string, error) {
+func (p *Proxy) GetFormulasByServerID(auth AuthParams, systemID int) ([]string, error) {
 	body, err := json.Marshal(map[string]interface{}{"sid": systemID})
 	if err != nil {
 		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
@@ -176,13 +173,13 @@ func (p *Proxy) GetFormulasByServerID(requestID string, auth AuthParams, systemI
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("response", resp), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err.Error()))
 			return nil, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err.Error()))
 			return nil, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
@@ -194,11 +191,10 @@ func (p *Proxy) GetFormulasByServerID(requestID string, auth AuthParams, systemI
 
 // GetFormulasByGroupID
 //
-// param: requestID
 // param: auth
 // param: groupID
 // return: string list of formulars, error
-func (p *Proxy) GetFormulasByGroupID(requestID string, auth AuthParams, groupID int) ([]string, error) {
+func (p *Proxy) GetFormulasByGroupID(auth AuthParams, groupID int) ([]string, error) {
 	body, err := json.Marshal(map[string]interface{}{"systemGroupId": groupID})
 	if err != nil {
 		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
@@ -213,13 +209,13 @@ func (p *Proxy) GetFormulasByGroupID(requestID string, auth AuthParams, groupID 
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("response", resp), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err.Error()))
 			return nil, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err.Error()))
 			return nil, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
@@ -231,12 +227,11 @@ func (p *Proxy) GetFormulasByGroupID(requestID string, auth AuthParams, groupID 
 
 // FormulaSetFormulasOfGroup - set formulas to group
 //
-// param: requestID
 // param: auth
 // param: systemID
 // param: formulaNames
 // return:
-func (p *Proxy) FormulaSetFormulasOfGroup(requestID string, auth AuthParams, systemID int, formulaNames []string) (int, error) {
+func (p *Proxy) FormulaSetFormulasOfGroup(auth AuthParams, systemID int, formulaNames []string) (int, error) {
 	body, err := json.Marshal(map[string]any{"systemGroupId": systemID, "formulas": formulaNames})
 	if err != nil {
 		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
@@ -245,20 +240,20 @@ func (p *Proxy) FormulaSetFormulasOfGroup(requestID string, auth AuthParams, sys
 	path := "formula/setFormulasOfGroup"
 	response, err := p.suse.SuseManagerCall(body, http.MethodPost, auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("Error message received from suse-manger", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error("Error message received from suse-manger", zap.Any("error", err.Error()))
 		return 0, err
 	}
 	var result int
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("response", resp), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err.Error()))
 			return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err.Error()))
 			return 0, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
@@ -270,12 +265,11 @@ func (p *Proxy) FormulaSetFormulasOfGroup(requestID string, auth AuthParams, sys
 
 // FormulaSetFormulasOfSystem -  set formulas for system
 //
-// param: requestID
 // param: auth
 // param: systemID
 // param: formulaNames
 // return:
-func (p *Proxy) FormulaSetFormulasOfSystem(requestID string, auth AuthParams, systemID int, formulaNames []string) (int, error) {
+func (p *Proxy) FormulaSetFormulasOfSystem(auth AuthParams, systemID int, formulaNames []string) (int, error) {
 	body, err := json.Marshal(map[string]any{"sid": systemID, "formulas": formulaNames})
 	if err != nil {
 		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
@@ -284,20 +278,20 @@ func (p *Proxy) FormulaSetFormulasOfSystem(requestID string, auth AuthParams, sy
 	path := "formula/setFormulasOfServer"
 	response, err := p.suse.SuseManagerCall(body, http.MethodPost, auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("Error message received from suse-manger", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error("Error message received from suse-manger", zap.Any("error", err.Error()))
 		return 0, err
 	}
 	var result int
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("response", resp), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err.Error()))
 			return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err.Error()))
 			return 0, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {

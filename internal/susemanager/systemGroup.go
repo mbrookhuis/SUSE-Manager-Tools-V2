@@ -12,12 +12,11 @@ import (
 
 // SystemGroupCreate - create the systemgroup
 //
-// param: requestID
 // param: auth
 // param: groupName
 // param: description
 // return:
-func (p *Proxy) SystemGroupCreate(requestID string, auth AuthParams, groupName string, description string) (*sumamodels.SystemGroupGetDetails, error) {
+func (p *Proxy) SystemGroupCreate(auth AuthParams, groupName string, description string) (*sumamodels.SystemGroupGetDetails, error) {
 	body, _ := json.Marshal(map[string]any{"name": groupName, "description": description})
 	path := "systemgroup/create"
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
@@ -28,13 +27,13 @@ func (p *Proxy) SystemGroupCreate(requestID string, auth AuthParams, groupName s
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error("error while handling suse manager response for creating system group", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error("error while handling suse manager response for creating system group", zap.Any("error", err.Error()))
 			return nil, fmt.Errorf("error while handling suse manager response for creating system group, err: %s", err.Error())
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshalling error api response", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error("unmarshalling error api response", zap.Any("error", err.Error()))
 			return nil, fmt.Errorf("unmarshalling error: %s", err.Error())
 		}
 	} else {
@@ -45,11 +44,10 @@ func (p *Proxy) SystemGroupCreate(requestID string, auth AuthParams, groupName s
 
 // SystemGroupGetDetails - get the details from the given systemgroup
 //
-// param: requestID
 // param: auth
 // param: groupName
 // return:
-func (p *Proxy) SystemGroupGetDetails(requestID string, auth AuthParams, groupName string) (*sumamodels.SystemGroupGetDetails, error) {
+func (p *Proxy) SystemGroupGetDetails(auth AuthParams, groupName string) (*sumamodels.SystemGroupGetDetails, error) {
 	body, _ := json.Marshal(map[string]any{"systemGroupName": groupName})
 	path := "systemgroup/getDetails"
 	response, err := p.suse.SuseManagerCall(body, "GET", auth.Host, path, auth.SessionKey)
@@ -60,13 +58,13 @@ func (p *Proxy) SystemGroupGetDetails(requestID string, auth AuthParams, groupNa
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error("error while handling suse manager response for fetching system group details", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error("error while handling suse manager response for fetching system group details", zap.Any("error", err.Error()))
 			return nil, fmt.Errorf("error while handling suse manager response for fetching system group details, err: %s", err.Error())
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshalling error suse-m response", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error("unmarshalling error suse-m response", zap.Any("error", err.Error()))
 			return nil, fmt.Errorf("unmarshalling error: %s", err.Error())
 		}
 	} else {
@@ -77,16 +75,15 @@ func (p *Proxy) SystemGroupGetDetails(requestID string, auth AuthParams, groupNa
 
 // SystemGroupListSystemsMinimal - list assigned systems from the given system group
 //
-// param: requestID
 // param: auth
 // param: groupName
 // return:
-func (p *Proxy) SystemGroupListSystemsMinimal(requestID string, auth AuthParams, groupName string) ([]sumamodels.SystemGroupListSystemsMinimal, error) {
+func (p *Proxy) SystemGroupListSystemsMinimal(auth AuthParams, groupName string) ([]sumamodels.SystemGroupListSystemsMinimal, error) {
 	body, _ := json.Marshal(map[string]interface{}{"systemGroupName": groupName})
 	path := "systemgroup/listSystemsMinimal"
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while fetching system group list systemsMinimal", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error("error while fetching system group list systemsMinimal", zap.Any("error", err.Error()))
 		return nil, fmt.Errorf("error while fetching system group list systemsMinimal err: %s", err.Error())
 	}
 
@@ -99,23 +96,28 @@ func (p *Proxy) SystemGroupListSystemsMinimal(requestID string, auth AuthParams,
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error("unmarshling error", zap.Any("error", err.Error()))
 			return nil, fmt.Errorf("unable to process the received data. err: %s", err.Error())
 		}
 	} else {
 		return nil, fmt.Errorf("calling system group list systemsMinimal Failed. Http StatusCode: %s", fmt.Sprint(response.StatusCode))
 	}
-	p.logger.Debug("Response from api", zap.Any("requestID", requestID), zap.Any("api", "SystemGroupListSystemsMinimal"), zap.Any("response", resultSuc))
+	p.logger.Debug("Response from api", zap.Any("api", "SystemGroupListSystemsMinimal"), zap.Any("response", resultSuc))
 
 	return resultSuc, nil
 }
 
-func (p *Proxy) SystemGroupListActiveSystemsInGroup(requestID string, auth AuthParams, groupName string) ([]int, error) {
+// SystemGroupListActiveSystemsInGroup
+//
+// param: auth
+// param: groupName
+// return:
+func (p *Proxy) SystemGroupListActiveSystemsInGroup(auth AuthParams, groupName string) ([]int, error) {
 	body, _ := json.Marshal(map[string]interface{}{"systemGroupName": groupName})
 	path := "systemgroup/listActiveSystemsInGroup"
 	response, err := p.suse.SuseManagerCall(body, "GET", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while fetching system group list of active systems", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error("error while fetching system group list of active systems", zap.Any("error", err.Error()))
 		return nil, fmt.Errorf("error while fetching system group list active systems err: %s", err.Error())
 	}
 	var resultSuc []int
@@ -127,12 +129,12 @@ func (p *Proxy) SystemGroupListActiveSystemsInGroup(requestID string, auth AuthP
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error("unmarshling error", zap.Any("error", err.Error()))
 			return nil, fmt.Errorf("unable to process the received data. err: %s", err.Error())
 		}
 	} else {
 		return nil, fmt.Errorf("calling system group list systemsMinimal Failed. Http StatusCode: %s", fmt.Sprint(response.StatusCode))
 	}
-	p.logger.Debug("Response from api", zap.Any("requestID", requestID), zap.Any("api", "SystemGroupListSystemsMinimal"), zap.Any("response", resultSuc))
+	p.logger.Debug("Response from api", zap.Any("api", "SystemGroupListSystemsMinimal"), zap.Any("response", resultSuc))
 	return resultSuc, nil
 }

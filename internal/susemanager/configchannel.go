@@ -12,15 +12,14 @@ import (
 
 // ConfigChannelListGlobals - list configchannels
 //
-// param: requestID
 // param: auth
 // return:
-func (p *Proxy) ConfigChannelListGlobals(requestID string, auth AuthParams) ([]sumamodels.ConfigChannelListGlobals, error) {
-	p.logger.Info("ConfigChannelListGlobals function call started", zap.Any("resquestId", requestID))
+func (p *Proxy) ConfigChannelListGlobals(auth AuthParams) ([]sumamodels.ConfigChannelListGlobals, error) {
+	p.logger.Info("ConfigChannelListGlobals function call started")
 	path := "configchannel/listGlobals"
 	response, err := p.suse.SuseManagerCall(nil, "GET", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("Error message recieved from suse-manger", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error("Error message recieved from suse-manger", zap.Any("error", err.Error()))
 		return nil, fmt.Errorf("error while getting list of configuration channels. Error: %s", err.Error())
 	}
 	var result []sumamodels.ConfigChannelListGlobals
@@ -32,7 +31,7 @@ func (p *Proxy) ConfigChannelListGlobals(requestID string, auth AuthParams) ([]s
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error("unmarshling error", zap.Any("error", err.Error()))
 			return nil, fmt.Errorf("unable to process the received data. err: %s", err.Error())
 		}
 	} else {

@@ -4,13 +4,11 @@ import (
 	"os"
 	"path/filepath"
 
-	_gc "SUSE-Manager-Tools-V2/internal/getConfig"
+	"SUSE-Manager-Tools-V2/internal/config"
 	log "SUSE-Manager-Tools-V2/internal/logger"
 	_sumanUseCase "SUSE-Manager-Tools-V2/internal/susemanager"
-	util "SUSE-Manager-Tools-V2/internal/util/uuid"
 	"SUSE-Manager-Tools-V2/internal/vars"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
 )
 
 // const - needed constants
@@ -45,23 +43,12 @@ func Execute(params vars.Params) {
 	if err != nil {
 		os.Exit(1)
 	}
-	configFileByte, err := _gc.ReadYamlConfigFile(params.ConfigFile)
-	if err != nil {
-		logger.Error("Unable to read configfile", zap.Any("Error", err))
-		os.Exit(1)
-	}
-	var configFile vars.ConfigInfo
-	err = yaml.Unmarshal(configFileByte, &configFile)
-	if err != nil {
-		logger.Error("Unable to convert configfile", zap.Any("Error", err))
-		os.Exit(1)
-	}
 
 	loggerConfig = log.Config{
 		Level:             loglevel,
 		TimestampFormat:   timestampFormat,
 		StdoutEnabled:     stdoutEnabled,
-		FilePath:          filepath.Join(configFile.Dirs.LogDir, params.Server),
+		FilePath:          filepath.Join(config.GetConfig().Dirs.LogDir, params.Server),
 		MaxSize:           maxSize,
 		StacktraceEnabled: stacktraceEnabled,
 		EnableFileLogs:    EnableFileLogs,
@@ -71,16 +58,15 @@ func Execute(params vars.Params) {
 	logger.Info("system-update starting")
 
 	sumancfg := _sumanUseCase.SumanConfig{
-		Host:     configFile.Suman.Server,
-		Login:    configFile.Suman.User,
-		Password: configFile.Suman.Password,
+		Host:     config.GetConfig().Suman.Server,
+		Login:    config.GetConfig().Suman.User,
+		Password: config.GetConfig().Suman.Password,
 		Insecure: true,
 	}
-	requestID := util.GenerateUniqueID()
 	suseAPI := _sumanUseCase.NewSuseManagerAPI("rhn/manager/api", true, logger, retryCount)
 	sumanProxyUseCase := _sumanUseCase.NewProxy(&sumancfg, suseAPI, logger, retryCount)
 	suseUseCase := _sumanUseCase.NewSuseManager(sumanProxyUseCase, &sumancfg, logger)
-	systemUpdate := NewSystemUpdate(sumanProxyUseCase, suseUseCase, 120, logger, params, configFile, requestID)
+	systemUpdate := NewSystemUpdate(sumanProxyUseCase, suseUseCase, 120, logger, params)
 	err = systemUpdate.SystemUpdate()
 	if err != nil {
 		logger.Error("systemUpdate failed", zap.Any("Server", params.Server), zap.Any("error", err.Error()))

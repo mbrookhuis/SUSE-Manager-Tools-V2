@@ -1,0 +1,2 @@
+{"log_level":"INFO","log_time_stamp":"2024-09-12T15:08:53.789+0200","function_name":"systemUpdate/root.go:41","log_message":"system-update initiated"}
+{"log_level":"ERROR","log_time_stamp":"2024-09-12T15:08:53.793+0200","function_name":"systemUpdate/validateParams.go:17","log_message":"Server to be updated is not given","given server":"not_set"}

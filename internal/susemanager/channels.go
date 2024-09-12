@@ -14,15 +14,14 @@ import (
 
 // ChannelListSoftwareChannels - list all software channels
 //
-// param: requestID
 // param: auth
 // return:
-func (p *Proxy) ChannelListSoftwareChannels(requestID string, auth AuthParams) ([]sumamodels.ChannelListSoftwareChannels, error) {
-	p.logger.Info("ChannelListSoftwareChannels function call started", zap.Any("requestID", requestID))
+func (p *Proxy) ChannelListSoftwareChannels(auth AuthParams) ([]sumamodels.ChannelListSoftwareChannels, error) {
+	p.logger.Info("ChannelListSoftwareChannels function call started")
 	path := "channel/listSoftwareChannels"
 	response, err := p.suse.SuseManagerCall(nil, "GET", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("Error message recieved from suse-manger", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error("Error message recieved from suse-manger", zap.Any("error", err.Error()))
 		return nil, fmt.Errorf("error while calling list software channels manager err: %s", err.Error())
 	}
 	var resultSuc []sumamodels.ChannelListSoftwareChannels
@@ -34,30 +33,29 @@ func (p *Proxy) ChannelListSoftwareChannels(requestID string, auth AuthParams) (
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error("unmarshling error", zap.Any("error", err.Error()))
 			return nil, fmt.Errorf("error while calling list software channels manager err: %s", err.Error())
 		}
 	} else {
-		p.logger.Error("list software channels call failed", zap.Any("resquestId", requestID), zap.Any("status code", response.StatusCode))
+		p.logger.Error("list software channels call failed", zap.Any("status code", response.StatusCode))
 		return nil, fmt.Errorf("calling list software channels manager Failed. Http StatusCode: %s Http Body: %s", fmt.Sprint(response.StatusCode), fmt.Sprint(response.Body))
 	}
-	p.logger.Info("Completed ChannelListSoftwareChannels function", zap.Any("requestID", requestID))
+	p.logger.Info("Completed ChannelListSoftwareChannels function")
 	return resultSuc, nil
 }
 
 // ChannelSoftwareListChildren - list software channels from given parent
 //
-// param: requestID
 // param: auth
 // param: label
 // return:
-func (p *Proxy) ChannelSoftwareListChildren(requestID string, auth AuthParams, label string) ([]sumamodels.ChannelSoftwareListChildren, error) {
-	p.logger.Info("Inside ChannelSoftwareListChildren function", zap.Any("requestID", requestID))
+func (p *Proxy) ChannelSoftwareListChildren(auth AuthParams, label string) ([]sumamodels.ChannelSoftwareListChildren, error) {
+	p.logger.Info("Inside ChannelSoftwareListChildren function")
 	body, _ := json.Marshal(map[string]interface{}{"channelLabel": label})
 	path := "channel/software/listChildren"
 	response, err := p.suse.SuseManagerCall(body, "GET", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("Error message recieved from suse-manger", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error("Error message recieved from suse-manger", zap.Any("error", err.Error()))
 		return nil, fmt.Errorf("error while calling list software channels err: %s", err.Error())
 	}
 	var resultSuc []sumamodels.ChannelSoftwareListChildren
@@ -69,18 +67,25 @@ func (p *Proxy) ChannelSoftwareListChildren(requestID string, auth AuthParams, l
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error("unmarshling error", zap.Any("error", err.Error()))
 			return nil, fmt.Errorf("error while calling list child software channels , err: %s", err.Error())
 		}
 	} else {
 		return nil, fmt.Errorf("calling list software channels Failed. Http StatusCode: %s Http Body: %s", fmt.Sprint(response.StatusCode), fmt.Sprint(response.Body))
 	}
-	p.logger.Info("Completed ChannelSoftwareListChildren function", zap.Any("requestID", requestID))
+	p.logger.Info("Completed ChannelSoftwareListChildren function")
 	return resultSuc, nil
 }
 
-func (p *Proxy) ChannelSoftwareCreateRepo(requestID string, auth AuthParams, label string, typeRepo string, url string) (sumamodels.ChannelSoftwareCreateRepo, error) {
-	p.logger.Info("Inside ChannelSoftwareCreateRepo function", zap.Any("requestID", requestID))
+// ChannelSoftwareCreateRepo
+//
+// param: auth
+// param: label
+// param: typeRepo
+// param: url
+// return:
+func (p *Proxy) ChannelSoftwareCreateRepo(auth AuthParams, label string, typeRepo string, url string) (sumamodels.ChannelSoftwareCreateRepo, error) {
+	p.logger.Info("Inside ChannelSoftwareCreateRepo function")
 	body, err := json.Marshal(map[string]interface{}{"label": label, "type": typeRepo, "url": url})
 	var resultSuc sumamodels.ChannelSoftwareCreateRepo
 	if err != nil {
@@ -90,31 +95,40 @@ func (p *Proxy) ChannelSoftwareCreateRepo(requestID string, auth AuthParams, lab
 	path := "channel/software/createRepo"
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("error", err.Error()))
 		return resultSuc, fmt.Errorf(returnCodes.ErrHandlingSuseManagerResponse)
 	}
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("response", resp), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err.Error()))
 			return resultSuc, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err.Error()))
 			return resultSuc, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
 		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
 		return resultSuc, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 	}
-	p.logger.Info("Completed ChannelSoftwareCreateRepo function", zap.Any("requestID", requestID))
+	p.logger.Info("Completed ChannelSoftwareCreateRepo function")
 	return resultSuc, nil
 }
 
-func (p *Proxy) ChannelSoftwareCreate(requestID string, auth AuthParams, label string, name string, summary string, archLabel string, parentLabel string) (int, error) {
-	p.logger.Info("Inside ChannelSoftwareCreate function", zap.Any("requestID", requestID))
+// ChannelSoftwareCreate
+//
+// param: auth
+// param: label
+// param: name
+// param: summary
+// param: archLabel
+// param: parentLabel
+// return:
+func (p *Proxy) ChannelSoftwareCreate(auth AuthParams, label string, name string, summary string, archLabel string, parentLabel string) (int, error) {
+	p.logger.Info("Inside ChannelSoftwareCreate function")
 	var resultSuc int
 	body, err := json.Marshal(map[string]interface{}{"label": label, "summary": summary, "archLabel": archLabel, "parentLabel": parentLabel, "name": name})
 	if err != nil {
@@ -124,31 +138,37 @@ func (p *Proxy) ChannelSoftwareCreate(requestID string, auth AuthParams, label s
 	path := "channel/software/create"
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("error", err.Error()))
 		return 0, fmt.Errorf(returnCodes.ErrHandlingSuseManagerResponse)
 	}
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("response", resp), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err.Error()))
 			return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err.Error()))
 			return 0, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
 		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
 		return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 	}
-	p.logger.Info("Completed ChannelSoftwareCreate function", zap.Any("requestID", requestID))
+	p.logger.Info("Completed ChannelSoftwareCreate function")
 	return resultSuc, nil
 }
 
-func (p *Proxy) ChannelSoftwareAssociateRepo(requestID string, auth AuthParams, channelLabel string, repoLabel string) (sumamodels.ChannelSoftwareListChildren, error) {
-	p.logger.Info("Inside ChannelSoftwareAssociateRepo function", zap.Any("requestID", requestID))
+// ChannelSoftwareAssociateRepo
+//
+// param: auth
+// param: channelLabel
+// param: repoLabel
+// return:
+func (p *Proxy) ChannelSoftwareAssociateRepo(auth AuthParams, channelLabel string, repoLabel string) (sumamodels.ChannelSoftwareListChildren, error) {
+	p.logger.Info("Inside ChannelSoftwareAssociateRepo function")
 	var resultSuc sumamodels.ChannelSoftwareListChildren
 	body, err := json.Marshal(map[string]interface{}{"channelLabel": channelLabel, "repoLabel": repoLabel})
 	if err != nil {
@@ -158,31 +178,36 @@ func (p *Proxy) ChannelSoftwareAssociateRepo(requestID string, auth AuthParams, 
 	path := "channel/software/associateRepo"
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("error", err.Error()))
 		return resultSuc, fmt.Errorf(returnCodes.ErrHandlingSuseManagerResponse)
 	}
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("response", resp), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err.Error()))
 			return resultSuc, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err.Error()))
 			return resultSuc, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
 		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
 		return resultSuc, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 	}
-	p.logger.Info("Completed ChannelSoftwareAssociateRepo function", zap.Any("requestID", requestID))
+	p.logger.Info("Completed ChannelSoftwareAssociateRepo function")
 	return resultSuc, nil
 }
 
-func (p *Proxy) ChannelSoftwareSyncRepo(requestID string, auth AuthParams, channelLabel string) (int, error) {
-	p.logger.Info("Inside ChannelSoftwareSyncRepo function", zap.Any("requestID", requestID))
+// ChannelSoftwareSyncRepo
+//
+// param: auth
+// param: channelLabel
+// return:
+func (p *Proxy) ChannelSoftwareSyncRepo(auth AuthParams, channelLabel string) (int, error) {
+	p.logger.Info("Inside ChannelSoftwareSyncRepo function")
 	var resultSuc int
 	body, err := json.Marshal(map[string]interface{}{"channelLabel": channelLabel})
 	if err != nil {
@@ -192,31 +217,36 @@ func (p *Proxy) ChannelSoftwareSyncRepo(requestID string, auth AuthParams, chann
 	path := "channel/software/syncRepo"
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("error", err.Error()))
 		return resultSuc, fmt.Errorf(returnCodes.ErrHandlingSuseManagerResponse)
 	}
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("response", resp), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err.Error()))
 			return resultSuc, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err.Error()))
 			return resultSuc, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
 		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
 		return resultSuc, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 	}
-	p.logger.Info("Completed ChannelSoftwareSyncRepo function", zap.Any("requestID", requestID))
+	p.logger.Info("Completed ChannelSoftwareSyncRepo function")
 	return resultSuc, nil
 }
 
-func (p *Proxy) ChannelSoftwareIsExisting(requestID string, auth AuthParams, label string) (bool, error) {
-	p.logger.Info("Inside ChannelSoftwareIsExisting function", zap.Any("requestID", requestID), zap.Any("Label", label))
+// ChannelSoftwareIsExisting
+//
+// param: auth
+// param: label
+// return:
+func (p *Proxy) ChannelSoftwareIsExisting(auth AuthParams, label string) (bool, error) {
+	p.logger.Info("Inside ChannelSoftwareIsExisting function", zap.Any("Label", label))
 	var resultSuc bool
 	body, err := json.Marshal(map[string]interface{}{"channelLabel": label})
 	if err != nil {
@@ -226,13 +256,13 @@ func (p *Proxy) ChannelSoftwareIsExisting(requestID string, auth AuthParams, lab
 	path := "channel/software/isExisting"
 	response, err := p.suse.SuseManagerCall(body, "GET", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+		p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("error", err.Error()))
 		return false, fmt.Errorf(returnCodes.ErrHandlingSuseManagerResponse)
 	}
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("requestID", requestID), zap.Any("response", resp), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err.Error()))
 			return false, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 
@@ -240,13 +270,13 @@ func (p *Proxy) ChannelSoftwareIsExisting(requestID string, auth AuthParams, lab
 		// p.logger.Info(byteArray)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err.Error()))
 			return false, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
 		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
 		return false, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 	}
-	p.logger.Info("Completed ChannelSoftwareIsExisting function", zap.Any("requestID", requestID))
+	p.logger.Info("Completed ChannelSoftwareIsExisting function")
 	return resultSuc, nil
 }

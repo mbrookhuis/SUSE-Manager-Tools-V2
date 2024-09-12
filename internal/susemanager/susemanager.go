@@ -48,14 +48,13 @@ func (s *SuseManager) GetSystemGroupName(negName string) string {
 
 // SetK3sDetails - set k3s formular
 //
-// param: requestID
 // param: auth
 // param: systemgroupName
 // param: k3sconfiginput
-func (s *SuseManager) SetK3sDetails(requestID string, auth AuthParams, systemgroupName string, k3sconfiginput map[string]interface{}) error {
+func (s *SuseManager) SetK3sDetails(auth AuthParams, systemgroupName string, k3sconfiginput map[string]interface{}) error {
 	var formulaName = "dtag-k3s-pod"
 	var section = "k3sconfig"
-	returnValue := setformulaatgrouplevel(requestID, s, auth, systemgroupName, formulaName, section, k3sconfiginput)
+	returnValue := setformulaatgrouplevel(s, auth, systemgroupName, formulaName, section, k3sconfiginput)
 	if returnValue != nil {
 		return returnValue
 	}
@@ -64,15 +63,14 @@ func (s *SuseManager) SetK3sDetails(requestID string, auth AuthParams, systemgro
 
 // setformulaatgrouplevel - at formular to systemgroup
 //
-// param: requestID
 // param: s
 // param: auth
 // param: systemgroupName
 // param: formulaName
 // param: section
 // param: input
-func setformulaatgrouplevel(requestID string, s *SuseManager, auth AuthParams, systemgroupName string, formulaName string, section string, input map[string]interface{}) error {
-	data, err := s.proxy.SystemGroupGetDetails(requestID, auth, systemgroupName)
+func setformulaatgrouplevel(s *SuseManager, auth AuthParams, systemgroupName string, formulaName string, section string, input map[string]interface{}) error {
+	data, err := s.proxy.SystemGroupGetDetails(auth, systemgroupName)
 	if err != nil {
 		return err
 	}
@@ -90,7 +88,7 @@ func setformulaatgrouplevel(requestID string, s *SuseManager, auth AuthParams, s
 			break
 		}
 	}
-	success, err := s.proxy.SetGroupFormulaData(requestID, auth, data.ID, formulaName, k3sdata)
+	success, err := s.proxy.SetGroupFormulaData(auth, data.ID, formulaName, k3sdata)
 	if err != nil {
 		return err
 	}
@@ -103,12 +101,11 @@ func setformulaatgrouplevel(requestID string, s *SuseManager, auth AuthParams, s
 
 // ChangeChannels - change assigned channels to system
 //
-// param: requestID
 // param: auth
 // param: systemID
 // param: targetedVersion
-func (s *SuseManager) ChangeChannels(requestID string, auth AuthParams, systemID int, targetedVersion string) error {
-	channels, err := s.proxy.ChannelListSoftwareChannels(requestID, auth)
+func (s *SuseManager) ChangeChannels(auth AuthParams, systemID int, targetedVersion string) error {
+	channels, err := s.proxy.ChannelListSoftwareChannels(auth)
 	if err != nil {
 		return err
 	}
@@ -122,30 +119,29 @@ func (s *SuseManager) ChangeChannels(requestID string, auth AuthParams, systemID
 	if baseChannelLabel == "" {
 		return fmt.Errorf("base channel for targetd version %s not available", targetedVersion)
 	}
-	childChannels, err := s.proxy.ChannelSoftwareListChildren(requestID, auth, baseChannelLabel)
+	childChannels, err := s.proxy.ChannelSoftwareListChildren(auth, baseChannelLabel)
 	if err != nil {
 		return err
 	}
-	err = s.proxy.SystemScheduleChangeChannels(requestID, auth, systemID, baseChannelLabel, childChannels)
+	err = s.proxy.SystemScheduleChangeChannels(auth, systemID, baseChannelLabel, childChannels)
 	if err != nil {
 		return fmt.Errorf("error while updating the channels")
 	}
-	s.logger.Info("Channel change is completed", zap.Any("systemID", systemID), zap.Any("requestID", requestID))
+	s.logger.Info("Channel change is completed", zap.Any("systemID", systemID))
 
 	return nil
 }
 
 // InstallPackages - install the mentoined packages to a system
 //
-// param: requestID
 // param: auth
 // param: systemID
 // param: pkgs
 // param: timeout
-func (s *SuseManager) InstallPackages(requestID string, auth AuthParams, systemID int, pkgs []string, timeout int) error {
-	s.logger.Debug("Inside Install pkgs function", zap.Any("requestID", requestID), zap.Any("pkgs", pkgs))
+func (s *SuseManager) InstallPackages(auth AuthParams, systemID int, pkgs []string, timeout int) error {
+	s.logger.Debug("Inside Install pkgs function", zap.Any("pkgs", pkgs))
 	// Getting Installed Pkgs
-	installedPkgs, err := s.proxy.SystemListInstalledPackages(requestID, auth, systemID)
+	installedPkgs, err := s.proxy.SystemListInstalledPackages(auth, systemID)
 	if err != nil {
 		return err
 	}
@@ -161,7 +157,7 @@ func (s *SuseManager) InstallPackages(requestID string, auth AuthParams, systemI
 		}
 	}
 	// Getting list of installable pkgs
-	installablePkgs, err := s.proxy.ListLatestInstallablePackages(requestID, auth, systemID)
+	installablePkgs, err := s.proxy.ListLatestInstallablePackages(auth, systemID)
 	if err != nil {
 		return err
 	}
@@ -180,7 +176,7 @@ func (s *SuseManager) InstallPackages(requestID string, auth AuthParams, systemI
 	// run script to install pkgs
 	installpkgs := strings.Join(installpkg, " ")
 	script := "#!/bin/bash\ntransactional-update -c -n pkg install " + installpkgs
-	err = s.proxy.ScheduleScriptRun(requestID, auth, systemID, timeout, script)
+	err = s.proxy.ScheduleScriptRun(auth, systemID, timeout, script)
 	if err != nil {
 		return err
 	}
@@ -230,65 +226,64 @@ func (s *SuseManager) GetAuth(sessionKey string) (*AuthParams, error) {
 
 // GetHost - get host
 //
-// param: requestID
 // param: negName
 // param: sessionKey
 // return:
-func (s *SuseManager) GetHost(requestID string, negName string, sessionKey string) (*AuthParams, error) {
+func (s *SuseManager) GetHost(negName string, sessionKey string) (*AuthParams, error) {
 
 	auth := AuthParams{
 		SessionKey: sessionKey,
 		Host:       s.cfg.Host,
 	}
 	// List system based on group
-	podMembers, err := s.proxy.SystemGroupListSystemsMinimal(requestID, auth, s.GetSystemGroupName(negName))
+	podMembers, err := s.proxy.SystemGroupListSystemsMinimal(auth, s.GetSystemGroupName(negName))
 	if err != nil {
 		return nil, err
 	}
 
 	// Get slaves session key
 	if podMembers == nil || err != nil {
-		slaves, err := s.proxy.GetSlaves(requestID, auth.SessionKey)
+		slaves, err := s.proxy.GetSlaves(auth.SessionKey)
 		if err != nil {
 			return nil, err
 		}
 		for _, slave := range slaves {
-			system, err := s.proxy.SystemGetID(requestID, auth, slave.Label)
+			system, err := s.proxy.SystemGetID(auth, slave.Label)
 			if err != nil {
-				s.logger.Error("Error while getting systemID", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+				s.logger.Error("Error while getting systemID", zap.Any("error", err.Error()))
 				return nil, err
 			}
 			resp, err := s.proxy.GetSystemFormulaData(auth, system[0].ID, "uyunihub")
 			if err != nil {
-				s.logger.Error("Error while unmarshaling data from SystemFormula", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+				s.logger.Error("Error while unmarshaling data from SystemFormula", zap.Any("error", err.Error()))
 				return nil, err
 			}
 			var slaveformuladata sumamodels.Uyunihub
 			byteArray, _ := json.Marshal(resp)
 			err = json.Unmarshal(byteArray, &slaveformuladata)
 			if err != nil {
-				s.logger.Error("Error while unmarshaling data from Uyunihub", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+				s.logger.Error("Error while unmarshaling data from Uyunihub", zap.Any("error", err.Error()))
 				return nil, err
 			}
 			reqBody, _ := json.Marshal(map[string]interface{}{
 				"login":    slaveformuladata.Hub.ServerUserName,
 				"password": slaveformuladata.Hub.ServerPassword})
-			slavesessionKey, err := s.proxy.GetSessionKey(reqBody, slave.Label, requestID)
+			slavesessionKey, err := s.proxy.GetSessionKey(reqBody, slave.Label)
 			if err != nil {
-				s.logger.Error("Error while login to suse slave", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+				s.logger.Error("Error while login to suse slave", zap.Any("error", err.Error()))
 			}
 			auth = AuthParams{
 				SessionKey: slavesessionKey,
 				Host:       slave.Label,
 			}
-			podMembers, err = s.proxy.SystemGroupListSystemsMinimal(requestID, auth, s.GetSystemGroupName(negName))
+			podMembers, err = s.proxy.SystemGroupListSystemsMinimal(auth, s.GetSystemGroupName(negName))
 			if podMembers != nil {
 				return &auth, nil
 			}
 			if err != nil || podMembers == nil {
-				err := s.proxy.SumanLogout(requestID, auth)
+				err := s.proxy.SumanLogout(auth)
 				if err != nil {
-					s.logger.Error("Error while perform logout against SUSE Manager", zap.Any("requestID", requestID), zap.Any("error", err.Error()))
+					s.logger.Error("Error while perform logout against SUSE Manager", zap.Any("error", err.Error()))
 					return nil, err
 				}
 				continue
@@ -306,31 +301,30 @@ func (s *SuseManager) GetHost(requestID string, negName string, sessionKey strin
 
 // CheckResponseProgress - check response from api call
 //
-// param: requestID
 // param: auth
 // param: response
 // param: timeOut
 // param: systemID
 // param: funcName
-func (p *Proxy) CheckResponseProgress(requestID string, auth AuthParams, response *rest.HTTPHelperStruct, timeOut int, systemID int, funcName string) error {
+func (p *Proxy) CheckResponseProgress(auth AuthParams, response *rest.HTTPHelperStruct, timeOut int, systemID int, funcName string) error {
 	var actionID int
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrHandlingSuseManagerResponse, err), zap.Any("requestID", requestID))
+			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrHandlingSuseManagerResponse, err))
 			return fmt.Errorf(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, err := json.Marshal(resp)
 		if err != nil {
-			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrFailedMarshalling, err), zap.Any("requestID", requestID))
+			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrFailedMarshalling, err))
 			return fmt.Errorf(returnCodes.ErrFailedMarshalling)
 		}
 		err = json.Unmarshal(byteArray, &actionID)
 		if err != nil {
-			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrFailedUnMarshalling, err), zap.Any("requestID", requestID))
+			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrFailedUnMarshalling, err))
 			return fmt.Errorf(returnCodes.ErrFailedUnMarshalling)
 		}
-		_, err = p.CheckProgress(requestID, auth, actionID, timeOut, funcName, systemID)
+		_, err = p.CheckProgress(auth, actionID, timeOut, funcName, systemID)
 		if err != nil {
 			return err
 		}

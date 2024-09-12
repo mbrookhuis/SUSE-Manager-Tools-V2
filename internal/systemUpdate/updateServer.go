@@ -3,7 +3,9 @@ package systemUpdate
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
+	"SUSE-Manager-Tools-V2/internal/config"
 	gc "SUSE-Manager-Tools-V2/internal/getConfig"
 	_sumanUseCase "SUSE-Manager-Tools-V2/internal/susemanager"
 	"SUSE-Manager-Tools-V2/internal/util/contains"
@@ -21,7 +23,7 @@ import (
 func (h *SystemUpdate) updateServer(systemId int, auth *_sumanUseCase.AuthParams, zf ...zapCore.Field) error {
 	h.logger.Debug("Function updateServer started", zf...)
 	// check if server is on the excluded list
-	for _, value := range h.configFile.Maintenance.ExcludeForPatch {
+	for _, value := range config.GetConfig().Maintenance.ExcludeForPatch {
 		if contains.PartOff(h.params.Server, value) {
 			h.logger.Error("Server to update is excluded from patching", zf...)
 			return fmt.Errorf("server %s to update is excluded from patching", h.params.Server)
@@ -43,7 +45,7 @@ func (h *SystemUpdate) updateServer(systemId int, auth *_sumanUseCase.AuthParams
 		}
 	}
 	doSPM, newBaseChannel := h.checkForSpMigration(systemId, auth, zf...)
-	h.logger.Debug(fmt.Sprintf("MBMBMB: do spm %b, new basechannel: %s", doSPM, newBaseChannel))
+	h.logger.Debug(fmt.Sprintf("MBMBMB: do spm %t, new basechannel: %s", doSPM, newBaseChannel))
 
 	//
 	//     (do_spm, new_basechannel) = check_for_sp_migration()
@@ -77,7 +79,7 @@ func (h *SystemUpdate) updateServer(systemId int, auth *_sumanUseCase.AuthParams
 // param: zf
 func (h *SystemUpdate) isSystemInactive(auth *_sumanUseCase.AuthParams, zf ...zapCore.Field) error {
 	h.logger.Debug("Function isSystemInactive started", zf...)
-	inActiveSystems, err := h.sumanProxy.SystemListInActiveSystems(h.requestID, *auth)
+	inActiveSystems, err := h.sumanProxy.SystemListInActiveSystems(*auth)
 	if err != nil {
 		zf = append(zf, zap.Any("error", err))
 		h.logger.Error("Unable to get lust of inactiveSystems", zf...)
@@ -103,11 +105,11 @@ func (h *SystemUpdate) isSystemInactive(auth *_sumanUseCase.AuthParams, zf ...za
 func (h *SystemUpdate) doUpdateActions(phase string, eventFile string, systemId int, auth *_sumanUseCase.AuthParams, zf ...zapCore.Field) error {
 	h.logger.Debug("Function doUpdateActions started", zf...)
 	// first do general, then server based
-	// first check if there is a entry for script
+	// first check if there is an entry for script
 	// then execute state.
 
 	// get general file
-	data, err := gc.ReadYamlConfigFile(filepath.Join(h.configFile.Dirs.UpdateScriptDir, eventFile))
+	data, err := gc.ReadYamlConfigFile(filepath.Join(config.GetConfig().Dirs.UpdateScriptDir, eventFile))
 	if err != nil {
 		h.logger.Warn("Unable to read updateScript, skipping", zap.Any("phase", phase), zap.Any("Type", eventFile), zap.Any("Error", err))
 		return nil
@@ -152,7 +154,7 @@ func (h *SystemUpdate) doUpdateActions(phase string, eventFile string, systemId 
 		for _, command := range scriptToRun {
 			commands = commands + "\n" + command
 		}
-		err := h.sumanProxy.ScheduleScriptRun(h.requestID, *auth, systemId, 240, commands)
+		err := h.sumanProxy.ScheduleScriptRun(*auth, systemId, 240, commands)
 		if err != nil {
 			return err
 		}
@@ -172,7 +174,7 @@ func (h *SystemUpdate) doUpdateActions(phase string, eventFile string, systemId 
 // param: zf
 func (h SystemUpdate) executeStates(states []string, systemId int, auth *_sumanUseCase.AuthParams, zf ...zapCore.Field) error {
 	h.logger.Debug("Function executeStates started", zf...)
-	err := h.sumanProxy.SystemScheduleApplyStates(h.requestID, *auth, systemId, states, 600)
+	err := h.sumanProxy.SystemScheduleApplyStates(*auth, systemId, states, 600)
 	if err != nil {
 		zf = append(zf, zap.Any("Error", err))
 		h.logger.Error("Highstate failed", zf...)
@@ -191,7 +193,7 @@ func (h SystemUpdate) executeStates(states []string, systemId int, auth *_sumanU
 func (h SystemUpdate) executeScripts(scripts []string, systemId int, auth *_sumanUseCase.AuthParams, zf ...zapCore.Field) error {
 	h.logger.Debug("Function executeScripts started", zf...)
 	for _, script := range scripts {
-		err := h.sumanProxy.ScheduleScriptRun(h.requestID, *auth, systemId, h.configFile.Suman.Timeout, script)
+		err := h.sumanProxy.ScheduleScriptRun(*auth, systemId, config.GetConfig().Suman.Timeout, script)
 		if err != nil {
 			zf = append(zf, zap.Any("Error", err))
 			h.logger.Error("Highstate failed", zf...)
@@ -202,17 +204,43 @@ func (h SystemUpdate) executeScripts(scripts []string, systemId int, auth *_suma
 	return nil
 }
 
+func (h SystemUpdate) getSPFromChannel(channelName string) string {
+	sp := strings.Split(channelName, "sp")[1]
+	sp = strings.Split(sp, "-")[0]
+	if len(sp) == 0 {
+		sp = "0"
+	}
+	return fmt.Sprintf("sp%s", sp)
+}
+
+// checkForSpMigration
+//
+// param: systemId
+// param: auth
+// param: zf
+// return:
 func (h SystemUpdate) checkForSpMigration(systemId int, auth *_sumanUseCase.AuthParams, zf ...zapCore.Field) (bool, string) {
 	h.logger.Debug("Function echeckForSpMigration started", zf...)
-	serverInfo, err := h.sumanProxy.SystemGetSubscribedBaseChannel(h.requestID, *auth, systemId)
+	serverInfo, err := h.sumanProxy.SystemGetSubscribedBaseChannel(*auth, systemId)
 	if err != nil {
 		return false, ""
 	}
-	if !contains.PartOff(serverInfo.Label, "sle") || !contains.PartOff(serverInfo.Label, "opensuse") {
+	if !contains.PartOff(serverInfo.Label, "sle") && !contains.PartOff(serverInfo.Label, "opensuse") {
 		h.logger.Warn("System is not running SLE or openSuse. SP Migration not possible", zf...)
 		return false, ""
 	}
-	h.logger.Debug(fmt.Sprintf("MBMBMB: assgined channel: %s", serverInfo.Label))
+	for projectOld, projectNew := range config.GetConfig().Maintenance.SpMigrationProject {
+		if strings.HasPrefix(serverInfo.Label, projectOld) {
+			newBaseChannel := strings.Replace(serverInfo.Label, projectOld, projectNew.(string), 1)
+			oldSP := h.getSPFromChannel(serverInfo.Label)
+			newProjectChannels, err := h.getProjectChannels(projectNew.(string), auth, zf...)
+			newSP := h.getSPFromChannel(newProjectChannels[0])
+			newBaseChannel = strings.Replace(newBaseChannel, oldSP, newSP, -1)
+			if err != nil {
+				return false, ""
+			}
+		}
+	}
 
 	h.logger.Debug("Function echeckForSpMigration finished", zf...)
 	return false, ""
@@ -265,3 +293,17 @@ def check_for_sp_migration():
                 return True, value
     return False, ""
 */
+
+func (h SystemUpdate) getProjectChannels(projectNew string, auth *_sumanUseCase.AuthParams, zf ...zapCore.Field) ([]string, error) {
+	h.logger.Debug("Function getProjectChannels started", zf...)
+	var projectChannels []string
+	projectInfo, err := h.sumanProxy.ContentManagementListProjectSources(*auth, projectNew)
+	if err != nil {
+		h.logger.Error(fmt.Sprintf("Error getting channels for project %s", projectNew))
+		return projectChannels, err
+	}
+	for _, info := range projectInfo {
+		projectChannels = append(projectChannels, info.ChannelLabel)
+	}
+	return projectChannels, nil
+}
